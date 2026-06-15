@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Gym IA Chat</title>
+
+    <style>
+      body {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        background: black;
+        font-family: Arial, sans-serif;
+      }
+
+      /* 📱 SIMULACIÓN CELULAR */
+      .phone {
+        width: 360px;
+        height: 640px;
+        border-radius: 30px;
+        background: #000;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.9);
+        overflow: hidden;
+        border: 3px solid #222;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* HEADER */
+      .header {
+        padding: 15px;
+        text-align: center;
+        background: #111;
+        color: yellow;
+        font-weight: bold;
+        border-bottom: 2px solid yellow;
+      }
+
+      /* CHAT */
+      .messages {
+        flex: 1;
+        padding: 10px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* MENSAJES */
+      .message {
+        max-width: 75%;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 10px;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .user {
+        background: yellow;
+        color: black;
+        align-self: flex-end;
+      }
+
+      .bot {
+        background: #333;
+        color: white;
+      }
+
+      /* HORA */
+      .time {
+        font-size: 10px;
+        opacity: 0.6;
+        margin-top: 5px;
+        text-align: right;
+      }
+
+      /* INPUT */
+      .input-area {
+        display: flex;
+        padding: 10px;
+        background: #111;
+      }
+
+      input {
+        flex: 1;
+        padding: 10px;
+        border-radius: 20px;
+        border: none;
+        outline: none;
+      }
+
+      button {
+        margin-left: 5px;
+        padding: 10px;
+        border-radius: 50%;
+        background: yellow;
+        border: none;
+        cursor: pointer;
+      }
+
+      /* ✨ ANIMACIÓN FADE */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* 🟡 TYPING DOTS */
+      .typing {
+        display: flex;
+        gap: 5px;
+      }
+
+      .dot {
+        width: 6px;
+        height: 6px;
+        background: white;
+        border-radius: 50%;
+        animation: blink 1.4s infinite;
+      }
+
+      .dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes blink {
+        0% {
+          opacity: 0.2;
+        }
+        20% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.2;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="phone">
+      <div class="header">💪 Gym IA</div>
+      <button
+        onclick="limpiarChat()"
+        style="
+          background: #222;
+          color: yellow;
+          border: 1px solid yellow;
+          padding: 5px;
+          margin: 5px;
+          border-radius: 10px;
+        "
+      >
+        🗑 Limpiar chat
+      </button>
+      ``
+
+      <div id="messages" class="messages"></div>
+
+      <div class="input-area">
+        <input
+          id="input"
+          placeholder="Escribí tu objetivo fitness Ej: quiero bajar de peso o ganar masa muscular......"
+        />
+        <button onclick="enviar()">➤</button>
+      </div>
+    </div>
+
+    <script>
+      function hora() {
+        return new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      function limpiarChat() {
+        localStorage.removeItem("chat");
+        document.getElementById("messages").innerHTML = "";
+      }
+
+      // ✅ GUARDAR EN LOCAL
+      function guardar(mensaje, tipo) {
+        let historial = JSON.parse(localStorage.getItem("chat")) || [];
+        historial.push({ mensaje, tipo });
+        localStorage.setItem("chat", JSON.stringify(historial));
+      }
+
+      // ✅ CARGAR CHAT AL ABRIR
+      window.onload = () => {
+        const historial = JSON.parse(localStorage.getItem("chat")) || [];
+        historial.forEach((m) => agregarMensaje(m.mensaje, m.tipo, false));
+
+        // ✅ SOLO si NO hay mensajes
+        if (historial.length === 0) {
+          agregarMensaje(
+            "💪 Hola! Soy tu asistente de Gym. ¿En qué te ayudo hoy?",
+            "bot",
+            false,
+          );
+        }
+      };
+
+      async function enviar() {
+        const input = document.getElementById("input");
+        const texto = input.value;
+
+        if (!texto) return;
+
+        agregarMensaje(texto, "user");
+        guardar(texto, "user");
+
+        input.value = "";
+
+        const typing = mostrarTyping();
+
+        const res = await fetch("http://localhost:3000/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ mensaje: texto }),
+        });
+
+        const data = await res.json();
+
+        typing.remove();
+
+        agregarMensaje(data.respuesta, "bot");
+        guardar(data.respuesta, "bot");
+      }
+
+      function agregarMensaje(texto, tipo, guardarMsg = true) {
+        const container = document.getElementById("messages");
+
+        const div = document.createElement("div");
+        div.classList.add("message", tipo);
+        div.innerHTML = texto.replace(/\n/g, "<br>");
+
+        const time = document.createElement("div");
+        time.classList.add("time");
+        time.innerText = hora();
+
+        div.appendChild(time);
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+
+        return div;
+      }
+
+      // ✨ TYPING (3 puntitos)
+      function mostrarTyping() {
+        const container = document.getElementById("messages");
+
+        const div = document.createElement("div");
+        div.classList.add("message", "bot");
+
+        const typing = document.createElement("div");
+        typing.classList.add("typing");
+
+        for (let i = 0; i < 3; i++) {
+          const dot = document.createElement("div");
+          dot.classList.add("dot");
+          typing.appendChild(dot);
+        }
+
+        div.appendChild(typing);
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+
+        return div;
+      }
+
+      // ENTER
+      document
+        .getElementById("input")
+        .addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            enviar();
+          }
+        });
+    </script>
+  </body>
+</html>

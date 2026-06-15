@@ -1,0 +1,23 @@
+# 💪 Gym IA Chat
+
+Sistema de inteligencia artificial para un gimnasio, con API backend y chat interactivo tipo WhatsApp.
+
+---
+
+## 🚀 Funcionalidades
+
+- API REST en Node.js (Express)
+- Integración con IA (OpenRouter)
+- Chat interactivo tipo app móvil
+- Recomendaciones de entrenamiento
+- Historial de conversaciones
+
+---
+
+## 🛠️ Uso
+
+1. Ejecutar:
+
+```bash
+node index.js
+```
